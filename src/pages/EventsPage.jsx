@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import InteractiveMap from '../features/events/components/InteractiveMap';
 import EventList from '../features/events/components/EventList';
@@ -7,34 +7,53 @@ import FilterBar from '../features/events/components/FilterBar';
 import { useEvents } from '../features/events/hooks/useEvents';
 
 export default function EventsPage() {
-  const { events, loading, error } = useEvents();
+  const { events, loading, error, toggleJoin } = useEvents();
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [filter, setFilter] = useState("All");
+  
+  // Filter States
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [ageFilter, setAgeFilter] = useState("Any Age");
 
-  // Logic to filter events based on the selected category
+  // Advanced Filtering Logic
   const filteredEvents = useMemo(() => {
-    if (filter === "All") return events;
-    return events.filter(e => e.category === filter);
-  }, [events, filter]);
+    return events.filter(event => {
+      const matchCategory = categoryFilter === "All" || event.category === categoryFilter;
+      const matchAge = ageFilter === "Any Age" || event.ageGroup === ageFilter;
+      return matchCategory && matchAge;
+    });
+  }, [events, categoryFilter, ageFilter]);
 
-  if (loading) return <div className="p-8 text-center text-gray-400">Loading party vibes...</div>;
-  if (error) return <div className="p-8 text-center text-red-400">Error: {error}</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-full text-purple-400 animate-pulse">
+      Loading nightlife data...
+    </div>
+  );
+  
+  if (error) return <div className="text-red-500 p-8">Error loading events: {error}</div>;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-120px)]">
        {/* COLUMN 1: List and Filters */}
        <div className="w-full lg:w-1/3 flex flex-col order-2 lg:order-1 h-full">
          <div className="mb-2">
-           <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 mb-4">
-             Explore Events
+           <h1 className="text-2xl font-bold text-white mb-4">
+             Discover Events
            </h1>
-           <FilterBar activeFilter={filter} onFilterChange={setFilter} />
+           
+           {/* Enhanced Filter Bar */}
+           <FilterBar 
+             activeCategory={categoryFilter} 
+             onCategoryChange={setCategoryFilter}
+             activeAge={ageFilter}
+             onAgeChange={setAgeFilter}
+           />
          </div>
          
-         <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-800">
+         <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-800 pb-20">
             <EventList 
               events={filteredEvents} 
-              onSelectEvent={setSelectedEvent} 
+              onSelectEvent={setSelectedEvent}
+              onJoinEvent={toggleJoin} // Passing the logic down
             />
          </div>
        </div>
@@ -47,23 +66,41 @@ export default function EventsPage() {
             onMarkerClick={setSelectedEvent} 
          />
          
-         {/* Map Overlay Popup */}
+         {/* Enhanced Map Popup */}
          {selectedEvent && (
-           <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-gray-900/95 backdrop-blur-md border border-gray-700 p-4 rounded-xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300 z-[1000]">
-             <div className="flex justify-between items-start mb-2">
-               <div>
-                 <h3 className="text-lg font-bold text-white">{selectedEvent.title}</h3>
-                 <p className="text-purple-400 text-xs">{selectedEvent.venue}</p>
-               </div>
-               <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white">
-                 <X size={18} />
+           <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-gray-900/95 backdrop-blur-xl border border-gray-700 p-0 rounded-xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300 z-[1000] overflow-hidden">
+             
+             {/* Popup Header Image */}
+             <div className="h-24 w-full relative">
+               <img src={selectedEvent.image} className="w-full h-full object-cover" />
+               <button 
+                 onClick={() => setSelectedEvent(null)} 
+                 className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-red-500 transition-colors"
+               >
+                 <X size={16} />
                </button>
+               <div className="absolute bottom-2 left-2 flex gap-2">
+                 <span className="text-[10px] bg-purple-600 text-white px-2 py-0.5 rounded font-bold uppercase">{selectedEvent.category}</span>
+                 <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded font-bold uppercase">{selectedEvent.ageGroup}</span>
+               </div>
              </div>
-             <div className="w-full h-32 rounded-lg overflow-hidden mb-3">
-                <img src={selectedEvent.image} alt={selectedEvent.title} className="w-full h-full object-cover" />
-             </div>
-             <div className="flex gap-2">
-               <Button className="flex-1 text-sm py-2">Join Event</Button>
+
+             <div className="p-4">
+               <h3 className="text-lg font-bold text-white mb-1">{selectedEvent.title}</h3>
+               <p className="text-gray-400 text-sm mb-4">{selectedEvent.venue}</p>
+               
+               <div className="flex gap-2">
+                 <Button 
+                   className={`flex-1 py-2 text-sm ${selectedEvent.isJoined ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                   onClick={() => toggleJoin(selectedEvent.id)}
+                 >
+                   {selectedEvent.isJoined ? (
+                     <span className="flex items-center gap-2"><CheckCircle2 size={16}/> I'm Going</span>
+                   ) : (
+                     "Join Party"
+                   )}
+                 </Button>
+               </div>
              </div>
            </div>
          )}
