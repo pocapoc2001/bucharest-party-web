@@ -1,100 +1,129 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, CheckCircle2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import EventCard from '../features/events/components/EventCard';
 import InteractiveMap from '../features/events/components/InteractiveMap';
-
-// --- DATE REALE DIN NOUL APP.JSX ---
-const MOCK_EVENTS = [
-  {
-    id: 1,
-    title: "Berlin Vibes @ Control",
-    venue: "Control Club",
-    address: "Strada Constantin Mille 4",
-    date: "2025-10-25",
-    time: "23:00",
-    description: "The heart of Bucharest underground. Deep techno in the main room.",
-    category: "Techno",
-    coords: [44.4361, 26.0986], // Latitudine/Longitudine reale
-    attendees: 342
-  },
-  {
-    id: 2,
-    title: "Sunset & Cocktails",
-    venue: "Linea / Closer to the Moon",
-    address: "Calea Victoriei 17",
-    date: "2025-10-26",
-    time: "19:00",
-    description: "Rooftop sunset overlooking the Dâmbovița river and Parliament.",
-    category: "Rooftop",
-    coords: [44.4335, 26.0965],
-    attendees: 112
-  },
-  {
-    id: 3,
-    title: "Nostalgia Retro Party",
-    venue: "Expirat Halele Carol",
-    address: "Strada Constantin Istrati 1",
-    date: "2025-10-27",
-    time: "22:00",
-    description: "Dancing in a renovated industrial factory. 90s & 00s hits.",
-    category: "Party",
-    coords: [44.4182, 26.0962],
-    attendees: 520
-  },
-  {
-    id: 4,
-    title: "Vinyl Sessions",
-    venue: "Platforma Wolff",
-    address: "Strada Constantin Istrati 1",
-    date: "2025-10-28",
-    time: "21:00",
-    description: "High-fidelity sound system and minimal beats.",
-    category: "Hip-Hop",
-    coords: [44.4188, 26.0955],
-    attendees: 85
-  }
-];
+import EventList from '../features/events/components/EventList';
+import FilterBar from '../features/events/components/FilterBar';
+import { useEvents } from '../features/events/hooks/useEvents';
 
 export default function EventsPage() {
+  const navigate = useNavigate();
+  const { events, loading, error, toggleJoin } = useEvents();
   const [selectedEvent, setSelectedEvent] = useState(null);
+  
+  // Filter States
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [ageFilter, setAgeFilter] = useState("Any Age");
+
+  // Advanced Filtering Logic
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      const matchCategory = categoryFilter === "All" || event.category === categoryFilter;
+      const matchAge = ageFilter === "Any Age" || event.ageGroup === ageFilter;
+      return matchCategory && matchAge;
+    });
+  }, [events, categoryFilter, ageFilter]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-full gap-4">
+      <div className="flex items-end gap-1 h-8">
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1s_ease-in-out_infinite] h-4"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1.2s_ease-in-out_infinite_0.1s] h-8"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_0.8s_ease-in-out_infinite_0.2s] h-6"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1.1s_ease-in-out_infinite_0.3s] h-5"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_0.9s_ease-in-out_infinite_0.4s] h-7"></span>
+      </div>
+      <p className="text-purple-400 text-sm font-medium animate-pulse">Loading nightlife data...</p>
+    </div>
+  );
+  
+  if (error) return <div className="text-red-500 p-8">Error loading events: {error}</div>;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-120px)]">
-       {/* COLOANA 1: Lista de Evenimente */}
-       <div className="w-full lg:w-1/3 space-y-4 overflow-y-auto pr-2 order-2 lg:order-1 h-full pb-20">
-        <h3 className="text-xl font-bold mb-4 text-purple-400">Tonight in Bucharest</h3>
-        {MOCK_EVENTS.map(event => (
-          <EventCard key={event.id} event={event} onSelect={setSelectedEvent} />
-        ))}
-      </div>
+    <div className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-120px)] relative">
+       {/* COLUMN 1: List and Filters */}
+       <div className="w-full lg:w-1/3 flex flex-col order-2 lg:order-1 h-full">
+         <div className="mb-2">
+           <h1 className="text-2xl font-bold text-white mb-4">
+             Discover Events
+           </h1>
+           
+           {/* Enhanced Filter Bar */}
+           <FilterBar 
+             activeCategory={categoryFilter} 
+             onCategoryChange={setCategoryFilter}
+             activeAge={ageFilter}
+             onAgeChange={setAgeFilter}
+           />
+         </div>
+         
+         <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-800 pb-20">
+            <EventList 
+              events={filteredEvents} 
+              onSelectEvent={setSelectedEvent}
+              onJoinEvent={toggleJoin} 
+            />
+         </div>
+       </div>
 
-       {/* COLOANA 2: Harta Interactivă */}
+       {/* COLUMN 2: Interactive Map */}
        <div className="w-full lg:w-2/3 h-[50vh] lg:h-full rounded-xl overflow-hidden shadow-2xl border border-gray-800 relative order-1 lg:order-2">
-         {/* Pasăm selectedEvent și la hartă pentru animația de flyTo */}
          <InteractiveMap 
-            events={MOCK_EVENTS} 
+            events={filteredEvents} 
             selectedEvent={selectedEvent}
             onMarkerClick={setSelectedEvent} 
          />
          
-         {/* Cardul Popup peste hartă (Overlay) */}
+         {/* Enhanced Map Popup Overlay */}
          {selectedEvent && (
-           <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-gray-900/95 backdrop-blur-md border border-gray-700 p-4 rounded-xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300 z-[1000]">
-             <div className="flex justify-between items-start">
-               <div>
-                 <h3 className="text-xl font-bold text-white">{selectedEvent.title}</h3>
-                 <p className="text-purple-400 text-sm mb-2">{selectedEvent.venue}</p>
+           <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-gray-900/95 backdrop-blur-xl border border-gray-700 p-0 rounded-xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300 z-[1000] overflow-hidden">
+             
+             {/* Popup Header Image */}
+             <div className="h-24 w-full relative">
+               <img src={selectedEvent.image} className="w-full h-full object-cover" alt={selectedEvent.title} />
+               <button 
+                 onClick={() => setSelectedEvent(null)} 
+                 className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-red-500 transition-colors"
+               >
+                 <X size={16} />
+               </button>
+               <div className="absolute bottom-2 left-2 flex gap-2">
+                 <span className="text-[10px] bg-purple-600 text-white px-2 py-0.5 rounded font-bold uppercase">{selectedEvent.category}</span>
+                 <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded font-bold uppercase">{selectedEvent.ageGroup}</span>
                </div>
-               <button onClick={() => setSelectedEvent(null)} className="text-gray-500 hover:text-white"><X size={20} /></button>
              </div>
-             <p className="text-gray-300 text-sm mb-4 line-clamp-2">{selectedEvent.description}</p>
-             <div className="flex gap-2">
-               <Button className="flex-1 text-sm py-2">Join List</Button>
+
+             <div className="p-4">
+               <h3 className="text-lg font-bold text-white mb-1">{selectedEvent.title}</h3>
+               <p className="text-gray-400 text-sm mb-4">{selectedEvent.venue}</p>
+               
+               <div className="flex gap-2">
+                 <Button 
+                   className={`flex-1 py-2 text-sm ${selectedEvent.isJoined ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                   onClick={() => toggleJoin(selectedEvent.id)}
+                 >
+                   {selectedEvent.isJoined ? (
+                     <span className="flex items-center gap-2"><CheckCircle2 size={16}/> I'm Going</span>
+                   ) : (
+                     "Join Party"
+                   )}
+                 </Button>
+               </div>
              </div>
            </div>
          )}
       </div>
+
+      {/* --- FLOATING ACTION BUTTON (Create Event) --- */}
+      <button
+        onClick={() => navigate('/create-event')}
+        className="absolute bottom-6 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-purple-500/40 hover:scale-110 transition-transform z-[500] group"
+        title="Create New Event"
+      >
+        <Plus size={32} className="group-hover:rotate-90 transition-transform duration-300" />
+      </button>
+
     </div>
   );
 }
