@@ -23,7 +23,7 @@ export default function MainLayout() {
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-50">
         <h2 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-          Party Hub
+          Bucharest Party Hub
         </h2>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-gray-200">
           {isMobileMenuOpen ? <X /> : <Menu />}
@@ -37,7 +37,7 @@ export default function MainLayout() {
       `}>
         <div className="hidden md:block p-6 border-b border-gray-800">
           <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-            Party Hub
+            Bucharest Party Hub
           </h2>
         </div>
         

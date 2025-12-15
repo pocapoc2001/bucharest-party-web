@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage';
 import EventsPage from './pages/EventsPage';
 import CommunitiesPage from './pages/CommunitiesPage';
 import ProfilePage from './pages/ProfilePage';
+import CreateEventPage from './pages/CreateEventPage';
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
         {/* --- RUTE PUBLICE --- */}
         {/* Pagina de Login este complet separată de restul aplicației */}
         <Route path="/login" element={<LoginPage />} />
+
+        <Route path="/create-event" element={<CreateEventPage />} />
 
         {/* --- RUTE PROTEJATE (Dashboard) --- */}
         {/* Toate aceste pagini vor avea Sidebar-ul și Header-ul din MainLayout */}
