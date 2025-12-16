@@ -1,6 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+/* For the server connection */
+import { useEffect } from 'react'
+import { supabase } from './lib/supabase'
+
+
 // Importăm Layout-urile
 import MainLayout from './layouts/MainLayout';
 
@@ -12,6 +17,21 @@ import ProfilePage from './pages/ProfilePage';
 import CreateEventPage from './pages/CreateEventPage';
 
 function App() {
+
+  /* Testare connection Supabase
+  useEffect(() => {
+    const testConnection = async () => {
+      const { data, error } = await supabase
+        .from('test')
+        .select('*')
+
+      console.log('✅ Supabase DATA:', data)
+      console.log('❌ Supabase ERROR:', error)
+    }
+
+    testConnection()
+  }, [])*/
+  
   return (
     <BrowserRouter>
       <Routes>
