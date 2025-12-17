@@ -26,11 +26,7 @@ export default function EventsPage() {
   }, [events, categoryFilter, ageFilter]);
 
   if (loading) return (
-<<<<<<< HEAD
-   <div className="flex flex-col items-center justify-center h-full gap-4">
-=======
     <div className="flex flex-col items-center justify-center h-full gap-4">
->>>>>>> ce22b51f8b04f83686aea212045aaca6f834fd0b
       <div className="flex items-end gap-1 h-8">
         <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1s_ease-in-out_infinite] h-4"></span>
         <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1.2s_ease-in-out_infinite_0.1s] h-8"></span>
