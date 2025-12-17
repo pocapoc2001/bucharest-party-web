@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 
-// --- MOCK DATA (Simulating Database) ---
-const MOCK_USER = {
+// --- MOCK DATA (Simulare) ---
+const MOCK_USER_BASE = {
   id: 'u-123',
   name: 'Alexandru C.',
   email: 'alex@partyhub.ro',
   faculty: 'FILS (Foreign Languages)',
-  avatarUrl: null, // null means use initials
-  bio: 'Techno enthusiast and weekend warrior. Always looking for the best rooftops in Bucharest.',
-  level: 5,
+  avatarUrl: null,
+  bio: 'Techno enthusiast and weekend warrior. Looking for the best rooftops.',
+  // Level și XP vor fi calculate dinamic mai jos
   settings: {
     notifications: true,
     locationServices: true,
@@ -32,6 +32,14 @@ const MOCK_TICKETS = [
     venue: 'Silver Church',
     date: '2025-10-27',
     status: 'Used'
+  },
+  {
+    id: 't-3',
+    eventId: 4,
+    title: 'Retro Party',
+    venue: 'Expirat',
+    date: '2025-11-01',
+    status: 'Valid'
   }
 ];
 
@@ -41,17 +49,24 @@ export function useUserProfile() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch delay
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Here you would normally fetch from Supabase
-        // const { data: userData } = await supabase.from('users').select('*').single();
+        await new Promise(resolve => setTimeout(resolve, 600)); // Simulare delay rețea
         
-        // Simulating network delay
-        await new Promise(resolve => setTimeout(resolve, 800)); 
-        
-        setUser(MOCK_USER);
+        // GAMIFICATION LOGIC: Calculăm XP și Level bazat pe bilete
+        // 1 Bilet = 50 XP
+        // Level up la fiecare 100 XP
+        const totalXP = MOCK_TICKETS.length * 50;
+        const currentLevel = Math.floor(totalXP / 100) + 1;
+
+        const enhancedUser = {
+            ...MOCK_USER_BASE,
+            xp_points: totalXP,
+            level: currentLevel
+        };
+
+        setUser(enhancedUser);
         setTickets(MOCK_TICKETS);
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -64,14 +79,11 @@ export function useUserProfile() {
   }, []);
 
   const updateSettings = (newSettings) => {
-    // Optimistic UI update
     setUser(prev => ({
       ...prev,
       settings: { ...prev.settings, ...newSettings }
     }));
-    
-    // In a real app, you would send a PATCH request to Supabase here
-    console.log("Settings updated in DB:", newSettings);
+    console.log("Settings updated (Mock):", newSettings);
   };
 
   return { user, tickets, isLoading, updateSettings };
