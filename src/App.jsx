@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react'
 import { supabase } from './lib/supabase'
 
+
 // Importăm Layout-urile
 import MainLayout from './layouts/MainLayout';
 
