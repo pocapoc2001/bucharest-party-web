@@ -26,8 +26,15 @@ export default function EventsPage() {
   }, [events, categoryFilter, ageFilter]);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-full text-purple-400 animate-pulse">
-      Loading nightlife data in Bucharest...
+   <div className="flex flex-col items-center justify-center h-full gap-4">
+      <div className="flex items-end gap-1 h-8">
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1s_ease-in-out_infinite] h-4"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1.2s_ease-in-out_infinite_0.1s] h-8"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_0.8s_ease-in-out_infinite_0.2s] h-6"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_1.1s_ease-in-out_infinite_0.3s] h-5"></span>
+        <span className="w-1.5 bg-purple-500 rounded-full animate-[music-wave_0.9s_ease-in-out_infinite_0.4s] h-7"></span>
+      </div>
+      <p className="text-purple-400 text-sm font-medium animate-pulse">Loading nightlife data...</p>
     </div>
   );
   

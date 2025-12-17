@@ -1,6 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+/* For the server connection */
+import { useEffect } from 'react'
+import { supabase } from './lib/supabase'
+
 // Importăm Layout-urile
 import MainLayout from './layouts/MainLayout';
 
@@ -10,8 +14,10 @@ import EventsPage from './pages/EventsPage';
 import CommunitiesPage from './pages/CommunitiesPage';
 import ProfilePage from './pages/ProfilePage';
 import CreateEventPage from './pages/CreateEventPage';
+import CreateCommunityPage from './pages/CreateCommunityPage';
 
 function App() {
+
   return (
     <BrowserRouter>
       <Routes>
@@ -20,6 +26,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
 
         <Route path="/create-event" element={<CreateEventPage />} />
+         <Route path="/create-community" element={<CreateCommunityPage />} />
 
         {/* --- RUTE PROTEJATE (Dashboard) --- */}
         {/* Toate aceste pagini vor avea Sidebar-ul și Header-ul din MainLayout */}
