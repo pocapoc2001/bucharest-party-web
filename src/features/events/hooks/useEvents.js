@@ -19,10 +19,12 @@ export function useEvents() {
 
         if (error) throw error;
 
-        // Ensure coords are correctly formatted (handles both array and string cases)
+        // Format data for the UI
         const formattedData = data.map(event => ({
           ...event,
-          // If coords comes as a string "[44, 26]", parse it. If it's already an array, leave it.
+          // UI expects 'id', so we map your DB's 'uid' to 'id'
+          id: event.uid || event.id, 
+          // Handle coords whether they come as string or JSON array
           coords: typeof event.coords === 'string' ? JSON.parse(event.coords) : event.coords
         }));
 
@@ -68,7 +70,7 @@ export function useEvents() {
           isJoined: newStatus, 
           attendees: newAttendees 
         })
-        .eq('id', eventId);
+        .eq('uid', eventId); // Changed 'id' to 'uid' to match your schema
 
       if (error) throw error;
 
@@ -83,7 +85,6 @@ export function useEvents() {
   // 3. Create Event (Inserts into Database)
   const createEvent = async (newEventData) => {
     try {
-      // Ensure coords is a standard array
       const payload = {
         title: newEventData.title,
         venue: newEventData.venue,
@@ -94,7 +95,7 @@ export function useEvents() {
         image: newEventData.image,
         coords: newEventData.coords, 
         attendees: 0,
-        isJoined: false
+        isJoined: false // Default state
       };
 
       const { data, error } = await supabase
@@ -106,7 +107,17 @@ export function useEvents() {
 
       // Add the new event to the local list immediately
       if (data && data.length > 0) {
-        setEvents(prev => [data[0], ...prev]);
+        const createdEvent = data[0];
+        
+        // Format the new event to match UI structure
+        const formattedEvent = {
+          ...createdEvent,
+          id: createdEvent.uid || createdEvent.id,
+          coords: typeof createdEvent.coords === 'string' ? JSON.parse(createdEvent.coords) : createdEvent.coords
+        };
+
+        setEvents(prev => [formattedEvent, ...prev]);
+        return formattedEvent;
       }
       
     } catch (err) {

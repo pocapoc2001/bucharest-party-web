@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MapPin, Image as ImageIcon, Type } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, Image as ImageIcon, Type, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import LocationPickerMap from '../features/events/components/LocationPickerMap';
@@ -8,7 +8,7 @@ import { useEvents } from '../features/events/hooks/useEvents';
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
-  const { createEvent } = useEvents();
+  const { createEvent } = useEvents(); // This hook now connects to Supabase
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -19,12 +19,13 @@ export default function CreateEventPage() {
     category: 'Techno',
     ageGroup: 'Student',
     image: '',
-    description: '',
     coords: null
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation
     if (!formData.coords) {
       alert("Please select a location on the map!");
       return;
@@ -32,21 +33,24 @@ export default function CreateEventPage() {
 
     setIsSubmitting(true);
     
-    // Simulate API Call
+    // The createEvent function in useEvents.js handles the Supabase Insert
     await createEvent(formData);
     
     setIsSubmitting(false);
-    navigate('/'); // Go back to dashboard
+    navigate('/'); // Return to the dashboard after creation
   };
 
   return (
     <div className="min-h-screen bg-black text-white pb-20">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 p-4 flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white">
+        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors">
           <ArrowLeft />
         </button>
-        <h1 className="text-xl font-bold">Create New Event</h1>
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <Sparkles className="text-purple-500" size={20}/>
+          Create New Party
+        </h1>
       </div>
 
       <div className="max-w-2xl mx-auto p-6">
@@ -58,18 +62,19 @@ export default function CreateEventPage() {
             
             <Input 
               type="text" 
-              placeholder="Event Title" 
+              placeholder="Event Title (e.g. Neon Rooftop Party)" 
               icon={Type}
               value={formData.title}
               onChange={(e) => setFormData({...formData, title: e.target.value})}
               required
+              className="bg-gray-900 border-gray-800 focus:border-purple-500"
             />
             
             <div className="flex gap-4">
               <Input 
                 type="date" 
                 icon={Calendar}
-                className="w-full"
+                className="w-full bg-gray-900 border-gray-800 focus:border-purple-500"
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
                 required
@@ -77,7 +82,7 @@ export default function CreateEventPage() {
               <Input 
                 type="time" 
                 icon={Clock}
-                className="w-full"
+                className="w-full bg-gray-900 border-gray-800 focus:border-purple-500"
                 value={formData.time}
                 onChange={(e) => setFormData({...formData, time: e.target.value})}
                 required
@@ -91,15 +96,16 @@ export default function CreateEventPage() {
               value={formData.venue}
               onChange={(e) => setFormData({...formData, venue: e.target.value})}
               required
+              className="bg-gray-900 border-gray-800 focus:border-purple-500"
             />
           </div>
 
           {/* 2. Filters */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-500 text-xs mb-2 ml-1">Category</label>
+              <label className="block text-gray-500 text-xs mb-2 ml-1 uppercase font-bold">Vibe</label>
               <select 
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none appearance-none"
+                className="w-full bg-gray-900 border border-gray-800 rounded-lg p-3 text-white focus:border-purple-500 outline-none appearance-none cursor-pointer hover:bg-gray-800 transition-colors"
                 value={formData.category}
                 onChange={(e) => setFormData({...formData, category: e.target.value})}
               >
@@ -111,9 +117,9 @@ export default function CreateEventPage() {
               </select>
             </div>
             <div>
-              <label className="block text-gray-500 text-xs mb-2 ml-1">Age Group</label>
+              <label className="block text-gray-500 text-xs mb-2 ml-1 uppercase font-bold">Crowd</label>
               <select 
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none appearance-none"
+                className="w-full bg-gray-900 border border-gray-800 rounded-lg p-3 text-white focus:border-blue-500 outline-none appearance-none cursor-pointer hover:bg-gray-800 transition-colors"
                 value={formData.ageGroup}
                 onChange={(e) => setFormData({...formData, ageGroup: e.target.value})}
               >
@@ -135,19 +141,26 @@ export default function CreateEventPage() {
                 value={formData.image}
                 onChange={(e) => setFormData({...formData, image: e.target.value})}
                 required
+                className="bg-gray-900 border-gray-800 focus:border-purple-500"
              />
+             {formData.image && (
+               <div className="h-40 w-full rounded-xl overflow-hidden border border-gray-800">
+                 <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+               </div>
+             )}
           </div>
 
           {/* 4. Location Map */}
           <div className="space-y-2">
             <h3 className="text-purple-400 font-bold uppercase text-xs tracking-wider">Exact Location</h3>
-            <p className="text-gray-500 text-xs mb-2">Click on the map to place the location pin.</p>
+            <p className="text-gray-500 text-xs mb-2">Tap on the map to place the location pin.</p>
             <LocationPickerMap onLocationSelect={(coords) => setFormData({...formData, coords})} />
           </div>
 
           <Button 
             className={`w-full py-4 text-lg font-bold shadow-xl shadow-purple-900/20 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={isSubmitting}
+            variant="primary"
           >
             {isSubmitting ? 'Publishing...' : 'Publish Event'}
           </Button>
