@@ -1,47 +1,5 @@
 import { useState, useEffect } from 'react';
-
-// --- MOCK DATA (Simulare) ---
-const MOCK_USER_BASE = {
-  id: 'u-123',
-  name: 'Alexandru C.',
-  email: 'alex@partyhub.ro',
-  faculty: 'FILS (Foreign Languages)',
-  avatarUrl: null,
-  bio: 'Techno enthusiast and weekend warrior. Looking for the best rooftops.',
-  // Level și XP vor fi calculate dinamic mai jos
-  settings: {
-    notifications: true,
-    locationServices: true,
-    publicProfile: false
-  }
-};
-
-const MOCK_TICKETS = [
-  {
-    id: 't-1',
-    eventId: 1,
-    title: 'Techno Bunker Night',
-    venue: 'Control Club',
-    date: '2025-10-25',
-    status: 'Valid'
-  },
-  {
-    id: 't-2',
-    eventId: 3,
-    title: 'Student Reggaeton Bash',
-    venue: 'Silver Church',
-    date: '2025-10-27',
-    status: 'Used'
-  },
-  {
-    id: 't-3',
-    eventId: 4,
-    title: 'Retro Party',
-    venue: 'Expirat',
-    date: '2025-11-01',
-    status: 'Valid'
-  }
-];
+import { supabase } from '../../../lib/supabase';
 
 export function useUserProfile() {
   const [user, setUser] = useState(null);
@@ -49,41 +7,127 @@ export function useUserProfile() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
+    async function fetchData() {
       try {
-        await new Promise(resolve => setTimeout(resolve, 600)); // Simulare delay rețea
-        
-        // GAMIFICATION LOGIC: Calculăm XP și Level bazat pe bilete
-        // 1 Bilet = 50 XP
-        // Level up la fiecare 100 XP
-        const totalXP = MOCK_TICKETS.length * 50;
+        setIsLoading(true);
+
+        // 1. Get Current Session (Logged in user)
+        const { data: { session } } = await supabase.auth.getSession();
+
+        let userProfile = null;
+        let joinedEvents = [];
+
+        if (session) {
+          const userId = session.user.id;
+
+          // 2. Fetch User Details from 'users' table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('uid', userId)
+            .single();
+
+          if (userData) {
+            userProfile = userData;
+          } else {
+            // Fallback: If user exists in Auth but not in 'users' table yet
+            userProfile = {
+              uid: userId,
+              display_name: session.user.user_metadata?.full_name || 'Party User',
+              email: session.user.email,
+              faculty: 'Student', // Default
+              bio: 'Ready to explore the nightlife.',
+              settings: { notifications: true, locationServices: true, publicProfile: false }
+            };
+          }
+
+          // 3. Fetch "Tickets" (Events the user has joined)
+          // Note: In a complex app, this would be a separate 'bookings' table. 
+          // For now, we query events where 'isJoined' is true.
+          const { data: eventsData, error: eventsError } = await supabase
+            .from('events')
+            .select('*')
+            .eq('isJoined', true) 
+            .order('date', { ascending: true });
+
+          if (eventsData) joinedEvents = eventsData;
+
+        } else {
+          // Guest / Not Logged In Fallback
+          console.log("No active session found. Using guest defaults.");
+          userProfile = {
+            uid: 'guest',
+            display_name: 'Guest User',
+            email: 'guest@partyhub.ro',
+            faculty: 'Guest',
+            bio: 'Please log in to save your progress.',
+            settings: {}
+          };
+        }
+
+        // 4. GAMIFICATION LOGIC (Dynamic)
+        // 1 Ticket = 50 XP. Level up every 100 XP.
+        const totalXP = joinedEvents.length * 50;
         const currentLevel = Math.floor(totalXP / 100) + 1;
 
-        const enhancedUser = {
-            ...MOCK_USER_BASE,
-            xp_points: totalXP,
-            level: currentLevel
-        };
+        // Merge DB data with calculated stats
+        setUser({
+          ...userProfile,
+          // Map DB column names to what the UI expects (if they differ)
+          name: userProfile.display_name || userProfile.name, 
+          xp_points: totalXP,
+          level: currentLevel,
+          // Ensure settings object exists
+          settings: userProfile.settings || { notifications: true, locationServices: true, publicProfile: false }
+        });
 
-        setUser(enhancedUser);
-        setTickets(MOCK_TICKETS);
+        // Format events into "Tickets"
+        const formattedTickets = joinedEvents.map(event => ({
+          id: `ticket-${event.id}`,
+          eventId: event.id,
+          title: event.title,
+          venue: event.venue,
+          date: event.date,
+          image: event.image,
+          status: new Date(event.date) < new Date() ? 'Used' : 'Valid' // Auto-calculate status based on date
+        }));
+
+        setTickets(formattedTickets);
+
       } catch (error) {
         console.error("Failed to fetch profile:", error);
       } finally {
         setIsLoading(false);
       }
-    };
+    }
 
     fetchData();
   }, []);
 
-  const updateSettings = (newSettings) => {
+  // 5. Update Settings Function
+  const updateSettings = async (newSettings) => {
+    // Optimistic UI Update
     setUser(prev => ({
       ...prev,
       settings: { ...prev.settings, ...newSettings }
     }));
-    console.log("Settings updated (Mock):", newSettings);
+
+    // Database Update
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Assuming your 'users' table has a 'settings' column of type JSONB
+        const { error } = await supabase
+          .from('users')
+          .update({ settings: newSettings })
+          .eq('uid', session.user.id);
+
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error("Error updating settings in DB:", err);
+      // Optional: Revert UI state here if critical
+    }
   };
 
   return { user, tickets, isLoading, updateSettings };

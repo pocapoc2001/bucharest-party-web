@@ -5,14 +5,14 @@ export default function TicketList({ tickets }) {
   return (
     <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-6 mb-6 shadow-md h-full">
       <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-        <Ticket className="text-purple-400" /> Biletele Mele
+        <Ticket className="text-purple-400" /> My events list
       </h3>
 
       {(!tickets || tickets.length === 0) ? (
         <div className="flex flex-col items-center justify-center py-8 text-gray-500">
             <Ticket size={48} className="mb-2 opacity-20" />
-            <p className="italic">Nu ai bilete active.</p>
-            <p className="text-xs mt-1">Mergi la Evenimente să cumperi unul!</p>
+            <p className="italic">You don't have any events yet.</p>
+            <p className="text-xs mt-1">Go to Main Hub to join one!</p>
         </div>
       ) : (
         <div className="space-y-3">

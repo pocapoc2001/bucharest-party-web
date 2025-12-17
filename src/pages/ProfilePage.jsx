@@ -18,16 +18,16 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
-      {/* 1. Profil & Gamification */}
+      {/* 1. Profile & Gamification */}
       <UserBio user={user} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 2. Lista Bilete */}
+        {/* 2. Ticket List */}
         <div>
           <TicketList tickets={tickets} />
         </div>
 
-        {/* 3. Setări */}
+        {/* 3. Settings */}
         <div>
           <SettingsForm settings={user?.settings} onUpdate={updateSettings} />
         </div>
