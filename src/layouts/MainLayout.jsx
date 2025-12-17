@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, MapPin, Users, User, LogOut } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { useEffect, useState } from 'react'
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { Menu, X, MapPin, Users, User, LogOut } from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { getUser, signOut } from '../lib/auth'
 
 // User simulat (va fi înlocuit de Supabase)
-const user = { name: "Alexandru C.", email: "alex@partyhub.ro" };
+// const user = { name: "Alexandru C.", email: "alex@partyhub.ro" };
 
 export default function MainLayout() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getUser()
+      setUser(currentUser)
+      setLoading(false)
+    }
+
+    fetchUser()
+  }, [])
+
+  useEffect(() => {
+    console.log('AUTH USER:', user)
+  }, [user])
+
 
   const handleNavClick = (path) => {
-    navigate(path);
-    setIsMobileMenuOpen(false);
-  };
+    navigate(path)
+    setIsMobileMenuOpen(false)
+  }
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname.startsWith(path)
+
+  const handleLogout = async () => {
+    await signOut()
+    setUser(null)
+    // navigate('/login')
+  }
+
+  // Auth guard
+  if (loading) return null
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
 
   return (
     <div className="min-h-screen bg-black text-gray-200 flex flex-col md:flex-row relative">
@@ -56,14 +88,14 @@ export default function MainLayout() {
         <div className="p-4 border-t border-gray-800">
           <div className="flex items-center gap-3 mb-4 px-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-white text-xs">
-              {user.name.charAt(0)}
+              {user.email?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.name}</p>
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>
           </div>
-          <Button variant="ghost" className="w-full justify-start text-red-400 hover:bg-red-900/20 hover:text-red-300" onClick={() => navigate('/login')}>
+          <Button variant="ghost" className="w-full justify-start text-red-400 hover:bg-red-900/20 hover:text-red-300" onClick={handleLogout}>
             <LogOut size={18} /> Sign Out
           </Button>
         </div>
