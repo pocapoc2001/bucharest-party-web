@@ -25,7 +25,6 @@ export default function CreateEventPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.coords) {
       alert("Please select a location on the map!");
       return;
@@ -33,11 +32,16 @@ export default function CreateEventPage() {
 
     setIsSubmitting(true);
     
-    // The createEvent function in useEvents.js handles the Supabase Insert
-    await createEvent(formData);
+    // Call createEvent and wait for the result
+    const result = await createEvent(formData);
     
     setIsSubmitting(false);
-    navigate('/'); // Return to the dashboard after creation
+
+    // Only navigate if result is valid (not null)
+    if (result) {
+      navigate('/'); 
+    }
+    // If result is null, we stay on the page so the user can fix the error.
   };
 
   return (
@@ -114,6 +118,10 @@ export default function CreateEventPage() {
                 <option>Rooftop</option>
                 <option>Latino</option>
                 <option>Hip-Hop</option>
+                <option>House</option>
+                <option>Jazz</option>
+                <option>Rock</option>
+                <option>Opera</option>
               </select>
             </div>
             <div>
