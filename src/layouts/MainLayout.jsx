@@ -1,15 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, MapPin, Users, User, LogOut, Sparkles } from 'lucide-react'; // Added Sparkles icon
+import { Menu, X, MapPin, Users, User, LogOut, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-
-// Simulated User
-const user = { name: "Alexandru C.", email: "alex@partyhub.ro" };
+import { supabase } from '../lib/supabase';
 
 export default function MainLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState({ name: 'Loading...', email: '' }); // Initial state
   const navigate = useNavigate();
   const location = useLocation();
+
+  // --- NEW: Fetch User Data on Mount ---
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        // 1. Get the logged-in session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // 2. Fetch extra details (like name) from your 'users' table
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('uid', session.user.id)
+            .single();
+
+          // 3. Update state with DB data OR fallback to Auth metadata
+          setUser({
+            name: profile?.name || profile?.display_name || session.user.user_metadata?.full_name || 'Party User',
+            email: session.user.email
+          });
+        } else {
+          // If no user, maybe redirect or show Guest
+          setUser({ name: 'Guest', email: 'Please log in' });
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    }
+
+    fetchUser();
+  }, []);
+
+  // --- NEW: Handle Sign Out ---
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   const handleNavClick = (path) => {
     navigate(path);
@@ -88,14 +125,15 @@ export default function MainLayout() {
         <div className="p-4 border-t border-gray-800">
           <div className="flex items-center gap-3 mb-4 px-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-white text-xs shadow-lg shadow-purple-500/20">
-              {user.name.charAt(0)}
+              {/* Initials Logic */}
+              {user.name ? user.name.charAt(0).toUpperCase() : '?'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.name}</p>
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>
           </div>
-          <Button variant="ghost" className="w-full justify-start text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors" onClick={() => navigate('/login')}>
+          <Button variant="ghost" className="w-full justify-start text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors" onClick={handleSignOut}>
             <LogOut size={18} /> Sign Out
           </Button>
         </div>
