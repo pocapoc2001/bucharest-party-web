@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, MapPin, Users, User, LogOut, Sparkles } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { supabase } from '../lib/supabase';
+import { useEffect, useState } from 'react'
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { Menu, X, MapPin, Users, User, LogOut } from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { getUser, signOut } from '../lib/auth'
+import { useIdleLogout } from '/src/lib/useIdleLogout'
+
+
+// User simulat (va fi înlocuit de Supabase)
+// const user = { name: "Alexandru C.", email: "alex@partyhub.ro" };
 
 export default function MainLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -10,7 +15,12 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- NEW: Fetch User Data on Mount ---
+  useIdleLogout({
+    idleMs: 10 * 60 * 1000, // 10 minutes
+    onLogout: () => navigate('/login', { replace: true }),
+  })
+
+
   useEffect(() => {
     async function fetchUser() {
       try {
