@@ -15,6 +15,10 @@ import EventsPage from './pages/EventsPage';
 import CommunitiesPage from './pages/CommunitiesPage';
 import ProfilePage from './pages/ProfilePage';
 import CreateEventPage from './pages/CreateEventPage';
+import ConfirmEmailPage from './pages/ConfirmEmailPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
+
 
 function App() {
 
@@ -38,6 +42,11 @@ function App() {
         {/* --- RUTE PUBLICE --- */}
         {/* Pagina de Login este complet separată de restul aplicației */}
         <Route path="/login" element={<LoginPage />} />
+
+        <Route path="/confirm" element={<ConfirmEmailPage />} />
+
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
 
         <Route path="/create-event" element={<CreateEventPage />} />
 
