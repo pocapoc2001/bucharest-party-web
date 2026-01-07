@@ -37,6 +37,11 @@ export default function MainLayout() {
     console.log('AUTH USER:', user)
   }, [user])
 
+  // --- NEW: Handle Sign Out ---
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   const handleNavClick = (path) => {
     navigate(path)
