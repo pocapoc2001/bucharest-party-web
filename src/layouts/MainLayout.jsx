@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
-import { Menu, X, MapPin, Users, User, LogOut } from 'lucide-react'
+import { Menu, X, MapPin, Users, User, LogOut, Sparkles } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { getUser, signOut } from '../lib/auth'
 import { useIdleLogout } from '/src/lib/useIdleLogout'
