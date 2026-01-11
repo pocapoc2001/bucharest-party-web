@@ -1,78 +1,154 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { getUser } from '../../../lib/auth';
 
 export function useCommunities() {
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // --- 1. FETCH (Real) ---
+  useEffect(() => {
+    getUser().then(u => setCurrentUser(u));
+  }, []);
+
+  // --- 1. FETCH (Now checks 'status') ---
   const fetchCommunities = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const user = await getUser();
+
+      // A. Get all communities
+      const { data: allComm, error: commError } = await supabase
         .from('communities')
         .select('*')
-        .order('id', { ascending: false }); // Cele mai noi primele
+        .order('id', { ascending: false });
 
-      if (error) throw error;
+      if (commError) throw commError;
 
-      // Adăugăm flag-ul local 'isJoined' (implicit false pt toți, momentan)
-      const dataWithStatus = data.map(c => ({ ...c, isJoined: false }));
+      // B. Get MY memberships (Map ID -> Status)
+      let myStatusMap = {};
+      if (user) {
+        const { data: members } = await supabase
+          .from('community_members')
+          .select('community_id, status')
+          .eq('user_id', user.id);
+        
+        if (members) {
+          members.forEach(m => {
+            myStatusMap[m.community_id] = m.status; // 'approved' or 'pending'
+          });
+        }
+      }
+
+      // C. Merge data
+      const dataWithStatus = allComm.map(c => ({
+        ...c,
+        // Status is: 'approved', 'pending', or null (not joined)
+        membershipStatus: myStatusMap[c.id] || null 
+      }));
+
       setCommunities(dataWithStatus);
     } catch (error) {
-      console.error('Eroare la încărcare:', error);
+      console.error('Error loading communities:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- 2. CREATE (Real) ---
-  const createCommunity = async (name, description) => {
+  // --- 2. CREATE ---
+  const createCommunity = async (name, description, category = 'General') => {
     try {
+      if (!currentUser) return alert("You must be logged in!");
+
       const { data, error } = await supabase
         .from('communities')
         .insert([{ 
           name, 
           description, 
+          category, 
+          created_by: currentUser.id,
           members_count: 1, 
-          active: true 
+          active: true,
+          is_private: false // Default to Public for now
         }])
-        .select();
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // Reîmprospătăm lista după creare
-      fetchCommunities();
-      return data;
+      if (data) {
+        await supabase.from('community_members').insert({
+          community_id: data.id,
+          user_id: currentUser.id,
+          role: 'admin',
+          status: 'approved' // Creator is always approved
+        });
+        fetchCommunities();
+        return data;
+      }
     } catch (error) {
-      console.error('Eroare la creare:', error);
+      console.error('Error creating community:', error);
+      throw error;
     }
   };
 
-  // --- 3. JOIN (Real - Simplificat) ---
-  const joinCommunity = async (id) => {
-    // Găsim comunitatea curentă
-    const comm = communities.find(c => c.id === id);
+  // --- 3. JOIN (Handles Private Logic) ---
+  const joinCommunity = async (communityId) => {
+    if (!currentUser) return alert("Please log in.");
+
+    const comm = communities.find(c => c.id === communityId);
     if (!comm) return;
 
-    // Calculăm noua valoare (toggle)
-    const newCount = comm.isJoined ? comm.members_count - 1 : comm.members_count + 1;
+    try {
+      // IF JOINED (Approved or Pending) -> LEAVE (Cancel Request)
+      if (comm.membershipStatus) {
+        const { error } = await supabase
+          .from('community_members')
+          .delete()
+          .eq('community_id', communityId)
+          .eq('user_id', currentUser.id);
 
-    // Update Optimist (Vizual)
-    setCommunities(prev => prev.map(c => 
-      c.id === id ? { ...c, members_count: newCount, isJoined: !c.isJoined } : c
-    ));
+        if (error) throw error;
+        
+        // Only decrement count if they were fully approved
+        if (comm.membershipStatus === 'approved') {
+           await supabase.rpc('decrement_members', { row_id: communityId }); 
+           // (Fallback manual update if RPC missing)
+           await supabase.from('communities')
+             .update({ members_count: Math.max(0, comm.members_count - 1) })
+             .eq('id', communityId);
+        }
 
-    // Update în Bază
-    await supabase
-      .from('communities')
-      .update({ members_count: newCount })
-      .eq('id', id);
+      } else {
+        // IF NOT JOINED -> JOIN (or REQUEST)
+        const newStatus = comm.is_private ? 'pending' : 'approved';
+
+        const { error } = await supabase
+          .from('community_members')
+          .insert({ 
+            community_id: communityId, 
+            user_id: currentUser.id,
+            status: newStatus
+          });
+
+        if (error) throw error;
+
+        // Only increment count if instant join
+        if (newStatus === 'approved') {
+           await supabase.from('communities')
+             .update({ members_count: comm.members_count + 1 })
+             .eq('id', communityId);
+        }
+      }
+
+      fetchCommunities(); // Refresh UI
+
+    } catch (error) {
+      console.error("Join/Leave error:", error);
+    }
   };
 
-  useEffect(() => {
-    fetchCommunities();
-  }, []);
+  useEffect(() => { fetchCommunities(); }, [currentUser]);
 
-  return { communities, loading, createCommunity, joinCommunity };
+  return { communities, loading, createCommunity, joinCommunity, currentUser };
 }

@@ -67,19 +67,20 @@ export function useEvents() {
     }
   };
 
-  // 3. Create Event (Fixed Column Mapping & Error Handling)
+ // 3. Create Event (Updated with community_id)
   const createEvent = async (newEventData) => {
     try {
-      // FIX: Map 'time' to 'start_time' to match your DB Schema constraint
       const payload = {
         title: newEventData.title,
         venue: newEventData.venue,
         date: newEventData.date,
-        start_time: newEventData.time, // <--- CHANGED THIS LINE
+        start_time: newEventData.time,
         category: newEventData.category,
         ageGroup: newEventData.ageGroup,
         image: newEventData.image,
-        coords: newEventData.coords, 
+        coords: newEventData.coords,
+        // ✅ NEW: Add the community link
+        community_id: newEventData.community_id || null, 
         attendees: 0,
         isJoined: false
       };
@@ -91,22 +92,22 @@ export function useEvents() {
 
       if (error) throw error;
 
-      // Success! Update local state
       if (data && data.length > 0) {
+        // ... (existing formatting logic remains the same)
         const createdEvent = {
           ...data[0],
           id: data[0].uid || data[0].id,
-          time: data[0].start_time, // Map back for UI consistency
+          time: data[0].start_time,
           coords: typeof data[0].coords === 'string' ? JSON.parse(data[0].coords) : data[0].coords
         };
         setEvents(prev => [createdEvent, ...prev]);
-        return createdEvent; // Return the event so the page knows it succeeded
+        return createdEvent;
       }
       
     } catch (err) {
       console.error("Error creating event:", err);
       alert(`Failed to create event: ${err.message}`);
-      return null; // Return null to indicate failure
+      return null;
     }
   };
 

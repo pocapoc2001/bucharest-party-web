@@ -16,10 +16,9 @@ export default function CreateCommunityPage() {
     category: 'General'
   });
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault(); 
     
-    // VALIDATION: Only check for Name
     if (!formData.name) {
       alert("Please enter a community name!");
       return;
@@ -28,8 +27,8 @@ export default function CreateCommunityPage() {
     setIsSubmitting(true);
     
     try {
-      // Sending empty string for image since we removed the field
-      await createCommunity(formData.name, formData.description, "");
+      // ✅ CHANGE IS HERE: We now pass 3 arguments (Name, Description, Category)
+      await createCommunity(formData.name, formData.description, formData.category);
       navigate('/communities'); 
     } catch (error) {
       console.error("Creation Error:", error);
