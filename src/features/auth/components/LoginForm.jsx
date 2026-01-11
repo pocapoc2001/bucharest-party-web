@@ -14,12 +14,11 @@ export default function LoginForm({ onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
-    // Clear error when user starts editing again
+  // Clear error when user starts editing again
   useEffect(() => {
     if (error) setError(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, password])
-
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -54,44 +53,91 @@ export default function LoginForm({ onSuccess }) {
     } catch (err) {
       setError('Login failed. Please try again.')
     } finally {
-
+      setIsSubmitting(false)
     }
+  }
+
+  const signInWithGoogle = async () => {
+    setError(null)
+    await supabase.auth.signInWithOAuth({ provider: 'google' })
+  }
+
+  const signInWithFacebook = async () => {
+    setError(null)
+    await supabase.auth.signInWithOAuth({ provider: 'facebook' })
   }
 
   return (
     <>
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-200">
+          {error}
+        </div>
+      )}
+
       <form className="space-y-4" onSubmit={handleSubmit}>
         <Input
           type="email"
           placeholder="Email"
-          icon={Users}
+          icon={Mail}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
         />
 
         <Input
           type="password"
           placeholder="Password"
-          icon={MapPin}
+          icon={LockOpen}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
         />
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {/* Forgot password */}
+        <div className="-mt-2 text-right">
+          <button
+            type="button"
+            onClick={() => navigate('/reset-password')}
+            className="text-sm text-purple-400 hover:text-purple-300"
+            disabled={isSubmitting}
+          >
+            Forgot password?
+          </button>
+        </div>
 
-        <Button type="submit" className="w-full">
-          Log In
+        <Button
+          type="submit"
+          className="w-full text-lg"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Logging in…' : 'Log In'}
         </Button>
       </form>
 
       <div className="mt-6 space-y-2">
-        <Button variant="ghost" className="w-full" onClick={signInWithGoogle}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={signInWithGoogle}
+          disabled={isSubmitting}
+        >
           Continue with Google
         </Button>
-        <Button variant="ghost" className="w-full" onClick={signInWithFacebook}>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={signInWithFacebook}
+          disabled={isSubmitting}
+        >
           Continue with Facebook
         </Button>
       </div>
+
+      
     </>
   )
 }

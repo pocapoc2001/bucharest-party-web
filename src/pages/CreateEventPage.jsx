@@ -5,14 +5,11 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import LocationPickerMap from '../features/events/components/LocationPickerMap';
 import { useEvents } from '../features/events/hooks/useEvents';
-import { useCommunities } from '../features/communities/hooks/useCommunities'; 
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
   const { createEvent } = useEvents(); // This hook now connects to Supabase
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { communities } = useCommunities();
   
   const [formData, setFormData] = useState({
     title: '',
