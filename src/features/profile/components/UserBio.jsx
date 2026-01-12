@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Mail, Camera, Loader2 } from 'lucide-react';
+import { Mail, Camera, Sparkles, Loader2 } from 'lucide-react';
 
 export default function UserBio({ user, onUploadAvatar, uploading }) {
   const fileInputRef = useRef(null);
@@ -24,30 +24,46 @@ export default function UserBio({ user, onUploadAvatar, uploading }) {
   };
 
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 mb-6 shadow-lg flex flex-col md:flex-row items-center gap-6">
+    <div className="relative overflow-hidden rounded-3xl bg-gray-900/80 border border-gray-800 shadow-2xl animate-in fade-in duration-700">
       
-      {/* Avatar Section with Upload */}
-      <div className="relative group cursor-pointer" onClick={handleImageClick}>
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl ring-4 ring-gray-900/50 overflow-hidden relative">
-          {uploading ? (
-             <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
-                <Loader2 className="animate-spin text-white" size={24} />
-             </div>
-          ) : null}
+      {/* 1. Decorative Background Blurs */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] -mr-20 -mt-20 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px] -ml-10 -mb-10 pointer-events-none"></div>
+
+      <div className="relative z-10 p-8 flex flex-col md:flex-row items-center gap-8">
+        
+        {/* 2. Avatar Section (Click to Upload) */}
+        <div 
+          className="relative group cursor-pointer" 
+          onClick={handleImageClick}
+          title="Change Profile Picture"
+        >
+          {/* Glowing Ring */}
+          <div className="absolute -inset-1 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500"></div>
           
-          {user.avatar_url ? (
-            <img 
-              src={user.avatar_url} 
-              alt={user.name} 
-              className="w-full h-full object-cover" 
-            />
-          ) : (
-            <span>{getInitials(user.name)}</span>
-          )}
-          
-          {/* Hover Overlay */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-            <Camera size={24} className="text-white" />
+          <div className="relative w-32 h-32 rounded-full bg-gray-800 border-4 border-gray-900 flex items-center justify-center text-4xl font-bold text-white shadow-2xl overflow-hidden">
+            {uploading ? (
+               <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20 backdrop-blur-sm">
+                  <Loader2 className="animate-spin text-purple-400" size={32} />
+               </div>
+            ) : null}
+            
+            {user.avatar_url ? (
+              <img 
+                src={user.avatar_url} 
+                alt={user.name} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+              />
+            ) : (
+              <span className="text-gray-400 group-hover:text-white transition-colors">
+                {getInitials(user.name)}
+              </span>
+            )}
+            
+            {/* Camera Overlay on Hover */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
+              <Camera size={28} className="text-white drop-shadow-md transform scale-75 group-hover:scale-100 transition-transform duration-300" />
+            </div>
           </div>
         </div>
         <input 
@@ -57,22 +73,20 @@ export default function UserBio({ user, onUploadAvatar, uploading }) {
           accept="image/*" 
           className="hidden" 
         />
-      </div>
 
-      {/* User Info Section - Clean & Professional */}
-      <div className="flex-1 text-center md:text-left">
-        <h2 className="text-3xl font-bold text-white tracking-tight">{user.name || "Guest"}</h2>
-        <div className="flex items-center justify-center md:justify-start gap-2 text-gray-400 text-sm mt-1">
-          <Mail size={14} />
-          <span>{user.email}</span>
+        {/* 3. User Info (Simplified) */}
+        <div className="text-center md:text-left space-y-2">
+          <h2 className="text-4xl font-black text-white tracking-tight flex items-center justify-center md:justify-start gap-3 drop-shadow-lg">
+            {user.name || "Party Guest"}
+            <Sparkles className="text-yellow-400 animate-pulse" size={24} />
+          </h2>
+          
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-purple-200 text-sm backdrop-blur-md shadow-inner">
+            <Mail size={14} /> 
+            <span>{user.email}</span>
+          </div>
         </div>
 
-        {/* Bio */}
-        {user.bio && (
-          <p className="text-gray-400 text-sm mt-3 leading-relaxed max-w-lg">
-            {user.bio}
-          </p>
-        )}
       </div>
     </div>
   );

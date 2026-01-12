@@ -7,7 +7,7 @@ export function useEvents() {
   const [error, setError] = useState(null);
   const [session, setSession] = useState(null);
 
-  // 1. Fetch Session & Events
+  // 1. Fetch Session & Events with Live Counts
   useEffect(() => {
     async function initData() {
       try {
@@ -17,15 +17,19 @@ export function useEvents() {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
 
-        // B. Fetch All Events
+        // B. Fetch Events + Dynamic Participant Count
+        // We use 'event_participants(count)' to get the live number of people joined
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
-          .select('*')
+          .select(`
+            *,
+            event_participants (count)
+          `)
           .order('date', { ascending: true });
 
         if (eventsError) throw eventsError;
 
-        // C. If Logged In, Fetch Participation
+        // C. If Logged In, Fetch User's Specific Participations (to know "Is Joined")
         let userParticipations = new Set();
         if (currentSession?.user) {
           const { data: participantsData } = await supabase
@@ -39,14 +43,24 @@ export function useEvents() {
         }
 
         // D. Merge Data
-        const formattedData = eventsData.map(event => ({
-          ...event,
-          id: event.uid || event.id, // Handle potential inconsistent ID naming
-          time: event.start_time || event.time, 
-          coords: typeof event.coords === 'string' ? JSON.parse(event.coords) : event.coords,
-          // Set isJoined based on the participants table, NOT the event column
-          isJoined: userParticipations.has(event.uid || event.id) 
-        }));
+        const formattedData = eventsData.map(event => {
+          // Extract count from the nested object returned by Supabase
+          // It usually looks like: event_participants: [{ count: 5 }]
+          const liveCount = event.event_participants?.[0]?.count || 0;
+
+          return {
+            ...event,
+            id: event.uid || event.id,
+            time: event.start_time || event.time, 
+            coords: typeof event.coords === 'string' ? JSON.parse(event.coords) : event.coords,
+            
+            // USE DYNAMIC COUNT (Ignore DB column)
+            attendees: liveCount,
+            
+            // CHECK "IS JOINED"
+            isJoined: userParticipations.has(event.uid || event.id) 
+          };
+        });
 
         setEvents(formattedData);
       } catch (err) {
@@ -67,7 +81,7 @@ export function useEvents() {
       return;
     }
 
-    // Optimistic UI Update
+    // Optimistic UI Update (Update screen instantly)
     setEvents(prev => prev.map(e => {
       if (e.id === eventId) {
         return { ...e, isJoined: true, attendees: (e.attendees || 0) + 1 };
@@ -76,23 +90,20 @@ export function useEvents() {
     }));
 
     try {
-      // A. Add to participants table
+      // Insert into participants table
       const { error: joinError } = await supabase
         .from('event_participants')
         .insert([{ user_id: session.user.id, event_id: eventId }]);
 
       if (joinError) throw joinError;
-
-      // B. Increment count using RPC (Safe Database Function)
-      // If you didn't create the function, use a simple update query here instead.
-      await supabase.rpc('update_attendees', { event_row_id: eventId, increment_num: 1 });
+      // No need to update 'events' table anymore!
 
     } catch (err) {
       console.error("Join failed:", err);
       // Revert UI on error
       setEvents(prev => prev.map(e => {
         if (e.id === eventId) {
-          return { ...e, isJoined: false, attendees: (e.attendees || 1) - 1 };
+          return { ...e, isJoined: false, attendees: Math.max(0, (e.attendees || 1) - 1) };
         }
         return e;
       }));
@@ -113,16 +124,13 @@ export function useEvents() {
     }));
 
     try {
-      // A. Remove from participants table
+      // Remove from participants table
       const { error: leaveError } = await supabase
         .from('event_participants')
         .delete()
         .match({ user_id: session.user.id, event_id: eventId });
 
       if (leaveError) throw leaveError;
-
-      // B. Decrement count
-      await supabase.rpc('update_attendees', { event_row_id: eventId, increment_num: -1 });
 
     } catch (err) {
       console.error("Leave failed:", err);
@@ -136,5 +144,49 @@ export function useEvents() {
     }
   };
 
-  return { events, loading, error, joinEvent, leaveEvent, user: session?.user };
+  // 4. Create Event
+  const createEvent = async (newEventData) => {
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) throw new Error("Must be logged in");
+
+      const payload = {
+        title: newEventData.title,
+        venue: newEventData.venue,
+        date: newEventData.date,
+        start_time: newEventData.time,
+        category: newEventData.category,
+        ageGroup: newEventData.ageGroup,
+        image: newEventData.image,
+        coords: newEventData.coords, 
+        attendees: 0 // Default for new event
+      };
+
+      const { data, error } = await supabase
+        .from('events')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const createdEvent = {
+        ...data,
+        id: data.uid || data.id,
+        time: data.start_time,
+        coords: typeof data.coords === 'string' ? JSON.parse(data.coords) : data.coords,
+        isJoined: false,
+        attendees: 0
+      };
+      
+      setEvents(prev => [createdEvent, ...prev]);
+      return createdEvent;
+      
+    } catch (err) {
+      console.error("Error creating event:", err);
+      return null;
+    }
+  };
+
+  return { events, loading, error, joinEvent, leaveEvent, createEvent, user: session?.user };
 }
