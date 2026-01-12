@@ -5,12 +5,16 @@ import { Button } from '../components/ui/Button';
 import InteractiveMap from '../features/events/components/InteractiveMap';
 import EventList from '../features/events/components/EventList';
 import FilterBar from '../features/events/components/FilterBar';
+import LeaveEventModal from '../features/events/components/LeaveEventModal'; // Import new modal
 import { useEvents } from '../features/events/hooks/useEvents';
 
 export default function EventsPage() {
   const navigate = useNavigate();
-  const { events, loading, error, toggleJoin } = useEvents();
+  // Get separate join/leave functions from our updated hook
+  const { events, loading, error, joinEvent, leaveEvent } = useEvents();
+  
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventToLeave, setEventToLeave] = useState(null); // State for the modal
   
   // Filter States
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -25,7 +29,32 @@ export default function EventsPage() {
     });
   }, [events, categoryFilter, ageFilter]);
 
-  // --- LOADING STATE (Equalizer Animation) ---
+  // Handle the Logic: Join immediately, Confirm to leave
+  const handleJoinToggle = (eventId) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (event.isJoined) {
+      // If already joined, open the confirmation modal
+      setEventToLeave(event);
+    } else {
+      // If not joined, join immediately
+      joinEvent(eventId);
+    }
+  };
+
+  const confirmLeave = () => {
+    if (eventToLeave) {
+      leaveEvent(eventToLeave.id);
+      setEventToLeave(null);
+      // Also update selected event state if it's the one currently open in the popup
+      if (selectedEvent?.id === eventToLeave.id) {
+        setSelectedEvent(prev => ({...prev, isJoined: false}));
+      }
+    }
+  };
+
+  // --- LOADING STATE ---
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-full gap-4">
       <div className="flex items-end gap-1 h-8">
@@ -43,6 +72,14 @@ export default function EventsPage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-120px)] relative">
+       {/* Leave Confirmation Modal */}
+       <LeaveEventModal 
+         isOpen={!!eventToLeave}
+         onClose={() => setEventToLeave(null)}
+         onConfirm={confirmLeave}
+         eventTitle={eventToLeave?.title}
+       />
+
        {/* COLUMN 1: List and Filters */}
        <div className="w-full lg:w-1/3 flex flex-col order-2 lg:order-1 h-full">
          <div className="mb-2">
@@ -61,7 +98,7 @@ export default function EventsPage() {
             <EventList 
               events={filteredEvents} 
               onSelectEvent={setSelectedEvent}
-              onJoinEvent={toggleJoin} 
+              onJoinEvent={handleJoinToggle} 
             />
          </div>
        </div>
@@ -74,7 +111,7 @@ export default function EventsPage() {
             onMarkerClick={setSelectedEvent} 
          />
          
-         {/* Popup Overlay */}
+         {/* Map Popup Overlay */}
          {selectedEvent && (
            <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-gray-900/95 backdrop-blur-xl border border-gray-700 p-0 rounded-xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300 z-[1000] overflow-hidden">
              
@@ -99,7 +136,7 @@ export default function EventsPage() {
                
                <Button 
                  className={`w-full py-2 text-sm ${selectedEvent.isJoined ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                 onClick={() => toggleJoin(selectedEvent.id)}
+                 onClick={() => handleJoinToggle(selectedEvent.id)}
                >
                  {selectedEvent.isJoined ? (
                    <span className="flex items-center gap-2"><CheckCircle2 size={16}/> I'm Going</span>
