@@ -6,7 +6,7 @@ import { useUserProfile } from '../features/profile/hooks/useUserProfile';
 import { Loader2 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user, tickets, isLoading, updateSettings } = useUserProfile();
+  const { user, tickets, isLoading, uploading, updateSettings, uploadAvatar } = useUserProfile();
 
   if (isLoading) {
     return (
@@ -18,18 +18,25 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
-      {/* 1. Profile & Gamification */}
-      <UserBio user={user} />
+      {/* 1. Header & Profile Info */}
+      <UserBio 
+        user={user} 
+        onUploadAvatar={uploadAvatar}
+        uploading={uploading}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 2. Ticket List */}
+        {/* 2. My Events List */}
         <div>
           <TicketList tickets={tickets} />
         </div>
 
-        {/* 3. Settings */}
+        {/* 3. General Settings */}
         <div>
-          <SettingsForm settings={user?.settings} onUpdate={updateSettings} />
+          <SettingsForm 
+            settings={user?.settings} 
+            onUpdate={updateSettings} 
+          />
         </div>
       </div>
     </div>
