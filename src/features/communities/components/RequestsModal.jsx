@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, User } from 'lucide-react';
 
 export default function RequestsModal({ community, onClose, onRespond }) {
-  const requests = community.pendingRequests || [];
+  // Local state for instant UI removal
+  const [localRequests, setLocalRequests] = useState([]);
+
+  // Sync with props whenever community data updates
+  useEffect(() => {
+    if (community?.pendingRequests) {
+      setLocalRequests(community.pendingRequests);
+    }
+  }, [community]);
+
+  // Handle click: remove locally first, then call API
+  const handleAction = (userId, action) => {
+    setLocalRequests(prev => prev.filter(req => req.userId !== userId));
+    onRespond(community.id, userId, action);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
@@ -14,13 +28,13 @@ export default function RequestsModal({ community, onClose, onRespond }) {
         <h2 className="text-xl font-bold text-white mb-1">Join Requests</h2>
         <p className="text-gray-400 text-sm mb-6">Manage who can join {community.name}</p>
 
-        {requests.length === 0 ? (
+        {localRequests.length === 0 ? (
           <div className="text-center py-8 text-gray-500 bg-gray-800/50 rounded-xl">
             No pending requests.
           </div>
         ) : (
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-            {requests.map((req) => (
+            {localRequests.map((req) => (
               <div key={req.userId} className="flex items-center justify-between bg-gray-800 p-3 rounded-xl border border-gray-700">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div className="w-10 h-10 rounded-full bg-gray-700 shrink-0 flex items-center justify-center">
@@ -34,14 +48,14 @@ export default function RequestsModal({ community, onClose, onRespond }) {
                 
                 <div className="flex gap-2 shrink-0">
                   <button 
-                    onClick={() => onRespond(community.id, req.userId, 'reject')}
+                    onClick={() => handleAction(req.userId, 'reject')}
                     className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                     title="Reject"
                   >
                     <X size={16} />
                   </button>
                   <button 
-                    onClick={() => onRespond(community.id, req.userId, 'accept')}
+                    onClick={() => handleAction(req.userId, 'accept')}
                     className="p-2 rounded-lg bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-colors"
                     title="Accept"
                   >

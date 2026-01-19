@@ -144,7 +144,19 @@ export function useEvents() {
     }
   };
 
-  // 4. Create Event
+  // 4. NEW HELPER: Toggle Join
+  const toggleJoin = (eventId) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return; 
+
+    if (event.isJoined) {
+      leaveEvent(eventId);
+    } else {
+      joinEvent(eventId);
+    }
+  };
+
+  // 5. Create Event
   const createEvent = async (newEventData) => {
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -188,5 +200,5 @@ export function useEvents() {
     }
   };
 
-  return { events, loading, error, joinEvent, leaveEvent, createEvent, user: session?.user };
+  return { events, loading, error, joinEvent, leaveEvent, toggleJoin, createEvent, user: session?.user };
 }
